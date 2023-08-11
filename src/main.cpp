@@ -5,8 +5,10 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "Renderer.hpp"
 #include "Shader.hpp"
 #include "VertexBuffer.hpp"
+#include "IndexBuffer.hpp"
 #include "VertexBufferLayout.hpp"
 #include "VertexArray.hpp"
 
@@ -67,16 +69,18 @@ int main()
     }
 
     const int n_triangles = n_points - 2;
-    glm::vec3 vertices[n_triangles * 3];
+    unsigned int vertices[n_triangles * 3];
     for (int i = 0; i < n_triangles; i++) {
-        vertices[i * 3 + 0] = points[0];
-        vertices[i * 3 + 1] = points[i + 1];
-        vertices[i * 3 + 2] = points[i + 2];
+        vertices[i * 3 + 0] = 0;
+        vertices[i * 3 + 1] = i + 1;
+        vertices[i * 3 + 2] = i + 2;
     }
 
+    Renderer renderer = Renderer();
     Shader shader = Shader("src\\shaders\\shader.vs", "src\\shaders\\shader.fs");
     VertexArray va = VertexArray();
-    VertexBuffer vb = VertexBuffer((void*)vertices, sizeof(glm::vec3) * (n_triangles * 3));
+    VertexBuffer vb = VertexBuffer((void*)points, sizeof(glm::vec3) * n_points);
+    IndexBuffer ib = IndexBuffer(vertices, n_triangles * 3);
     VertexBufferLayout layout = VertexBufferLayout();
     layout.pushf(3, GL_FALSE);
     va.addBuffer(vb, layout);
@@ -137,18 +141,16 @@ int main()
         translation2 = glm::translate(glm::mat4(1.0f), pos2);
 
         int translationLoc = glGetUniformLocation(shader.ID, "translation");
-        glUniformMatrix4fv(translationLoc, 1, GL_FALSE, glm::value_ptr(translation));
 
         processInput(window);
         glClearColor(0.0, 0.0, 0.0, 1.0);
         glClear(GL_COLOR_BUFFER_BIT);
-        shader.use();
-        // glBindVertexArray(VAO);
-        va.bind();
-        glDrawArrays(GL_TRIANGLES, 0, n_triangles * 3);
-        
+
+        glUniformMatrix4fv(translationLoc, 1, GL_FALSE, glm::value_ptr(translation));
+        renderer.draw(va, ib, shader);
+
         glUniformMatrix4fv(translationLoc, 1, GL_FALSE, glm::value_ptr(translation2));
-        glDrawArrays(GL_TRIANGLES, 0, n_triangles * 3);
+        renderer.draw(va, ib, shader);
 
         glBindVertexArray(0);
 
